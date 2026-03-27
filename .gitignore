@@ -1,0 +1,15 @@
+# build output
+dist
+
+# dependencies
+node_modules
+.pnpm-store/
+.github/**/node_modules
+packages/git-ts/src/storage/blockdFs/objects/placeholders/.test/ignore_temp_**
+packages/git-ts/src/storage/blockdFs/objects/placeholders/.test/ignore_temp_**
+packages/git-ts/fixtures/sqlite-in-git-wal.blockd.**
+packages/git-ts/fixtures/text-delta.test.blockd.**
+
+# environment files
+.env
+.env.*
