@@ -1,1 +1,1 @@
-{"root":["./src/blockdeflate.test.ts","./src/blockdeflate.ts","./src/blockdeflationinfo.ts","./src/blockinflate.test.ts","./src/blockinflate.ts","./src/chunkblockdeflate.test.ts","./src/chunkblockdeflate.ts","./src/seekinflate.test.ts","./src/seekinflate.ts","./src/zlibtest.test.ts","./src/index.ts","./src/types/syncreaderinterface.ts"],"version":"5.9.3"}
+{"root":["./src/loose-object-test/loose-object.test.ts","./src/loose-object-test/repacked-loose-object.test.ts","./src/native-git-util/read-blob.ts"],"errors":true,"version":"5.9.3"}
