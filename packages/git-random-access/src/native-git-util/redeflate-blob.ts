@@ -86,52 +86,16 @@ export function redeflateBlob(options: RedeflateBlobOptions): Buffer {
 		const chunkDeflate = new ChunkBlockDeflate({ level: compressionLevel });
 		chunkDeflate.pushChunk(headerBytes, "header");
 
-		// Use the remaining bytes from the initial header read as the start of the first data chunk
-		const remainingFromHeader = headerBuffer.subarray(headerEnd, headerBytesRead);
-
-		// Create the first chunk: start with remaining bytes, then inflate more to reach blockSize
-		const firstChunk = Buffer.alloc(blockSize);
-		let firstChunkSize = remainingFromHeader.length;
-		remainingFromHeader.copy(firstChunk);
-
-		// If we don't have a full block, inflate more bytes
-		// Pass the amount of data we've consumed so far (remainingFromHeader.length)
-		if (firstChunkSize < blockSize && firstChunkSize < contentSize) {
-			const bytesNeeded = Math.min(blockSize - firstChunkSize, contentSize - firstChunkSize);
-			const additionalBuffer = Buffer.alloc(bytesNeeded);
-			const additionalBytes = seekInflate.inflateRange(
-				additionalBuffer,
-				firstChunkSize,  // Position in the inflated stream (after the remaining data)
-				bytesNeeded
-			);
-			additionalBuffer.copy(firstChunk, firstChunkSize);
-			firstChunkSize += additionalBytes;
-		}
-
-		// Push the first chunk (check if it's the last chunk)
-		const isFirstChunkLast = firstChunkSize >= contentSize;
-		if (firstChunkSize > 0) {
-			chunkDeflate.pushChunk(
-				firstChunk.subarray(0, firstChunkSize),
-				"chunk-0",
-				isFirstChunkLast
-			);
-		}
-
-		// If first chunk was the last one, we're done
-		if (isFirstChunkLast) {
-			return Buffer.concat(chunkDeflate.chunks);
-		}
-
-		// Loop through the remaining blocks
-		let totalDataRead = firstChunkSize;
-		let chunkIndex = 1;
+		// Read and push the data in fixed-size chunks
+		// Start from position 0 (beginning of data after header)
+		let totalDataRead = 0;
+		let chunkIndex = 0;
 
 		while (totalDataRead < contentSize) {
 			const chunkBuffer = Buffer.alloc(blockSize);
 			const bytesToRead = Math.min(blockSize, contentSize - totalDataRead);
 
-			// Read the next chunk - pass the position we've consumed so far
+			// Read from the position we've consumed so far
 			const bytesRead = seekInflate.inflateRange(
 				chunkBuffer,
 				totalDataRead,

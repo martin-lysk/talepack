@@ -31,6 +31,47 @@ const concationatedDeflatePath = "/concationatedDeflate.data"
 fs.writeFileSync(concationatedDeflatePath, concationatedDeflate)
 
 describe("SeekInflate", () => {
+	it("should inflate two subsequent 200-byte blocks", () => {
+		const fileHandle = fs.openSync(path, "r")
+		const seekInflate = new SeekInflate({
+			inputChunkSize: 256,
+			reader: (buffer, start, end) => {
+				return fs.readSync(fileHandle, buffer, 0, end - start, start)
+			},
+		})
+
+		// Track our position in the inflated stream
+		let currentPos = 0
+
+		// Read first 200 bytes
+		const firstBlock = new Uint8Array(200)
+		const firstBytesRead = seekInflate.inflateRange(firstBlock, currentPos, 200)
+		console.log("First block read:", firstBytesRead, "bytes, currentInflatedEnd:", seekInflate.currentInflatedEnd)
+		currentPos += firstBytesRead
+
+		const firstBlockString = new TextDecoder().decode(firstBlock.subarray(0, firstBytesRead))
+		const expectedFirst = inflatedRandomNoise.substr(0, 200)
+		console.log("First block matches:", firstBlockString === expectedFirst)
+		expect(firstBlockString).toBe(expectedFirst)
+
+		// Read next 200 bytes (should continue from where we left off)
+		const secondBlock = new Uint8Array(200)
+		const secondBytesRead = seekInflate.inflateRange(secondBlock, currentPos, 200)
+		console.log("Second block read:", secondBytesRead, "bytes, currentInflatedEnd:", seekInflate.currentInflatedEnd)
+		currentPos += secondBytesRead
+
+		const secondBlockString = new TextDecoder().decode(secondBlock.subarray(0, secondBytesRead))
+		const expectedSecond = inflatedRandomNoise.substr(200, 200)
+		console.log("Second block matches:", secondBlockString === expectedSecond)
+		expect(secondBlockString).toBe(expectedSecond)
+
+		// Verify concatenated result
+		const concatenated = new TextDecoder().decode(new Uint8Array([...firstBlock.subarray(0, firstBytesRead), ...secondBlock.subarray(0, secondBytesRead)]))
+		const expectedConcatenated = inflatedRandomNoise.substr(0, 400)
+		console.log("Concatenated matches:", concatenated === expectedConcatenated)
+		expect(concatenated).toBe(expectedConcatenated)
+	})
+
 	it("expect to throw when reading in a previous window (we may just warn)?", () => {
 		//       |----|     <-- requested range
 		//                  |---|  <- inflated window (restart would be reauired)

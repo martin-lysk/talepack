@@ -140,6 +140,7 @@ export function registerFSVFS(sqlite3: Sqlite3Static, options: FSVFSOptions): vo
 			try {
 				const buffer = new Uint8Array(n);
 				const bytesRead = fs.readSync(file.fd, buffer, 0, n, Number(offset));
+				console.log(`FS VFS: Read ${bytesRead} bytes from ${file.path} at offset ${offset}`);
 
 				// If we read less than expected, it's not an error unless we read 0
 				// and the file position is beyond the end

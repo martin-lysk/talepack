@@ -31,6 +31,9 @@ importers:
       '@eslint/js':
         specifier: ^9.12.0
         version: 9.39.4
+      '@sqlite.org/sqlite-wasm':
+        specifier: 3.51.2-build8
+        version: 3.51.2-build8
       '@types/node':
         specifier: ^25.5.0
         version: 25.5.0
@@ -607,6 +610,10 @@ packages:
     resolution: {integrity: sha512-PrsWNQ8BuE00O3Xsx3ALh2Df8fAj9+cvvX9AIA6o4KpATR98c9mud4XtDWVvsEuyia5U4tVSTKygawyJkjm60w==}
     cpu: [x64]
     os: [win32]
+
+  '@sqlite.org/sqlite-wasm@3.51.2-build8':
+    resolution: {integrity: sha512-NvWLTgbqGu1XOLKxePE5Jvc5bzy6QACAQLURQnumSFm0hQms09r2rjMp5i1rvh1DXCe5Rx1FEGcEeQ9BnBB2+Q==}
+    engines: {node: '>=22'}
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
@@ -1767,6 +1774,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.60.0':
     optional: true
+
+  '@sqlite.org/sqlite-wasm@3.51.2-build8': {}
 
   '@types/estree@1.0.8': {}
 
