@@ -13,6 +13,7 @@ import {
 import { tmpdir } from "os";
 import { join } from "path";
 import { BlockDeflate } from "@talepack/zlib-random-access";
+import { redeflateBlob } from "../native-git-util/redeflate-blob.js";
 import { SHA1 } from "@oslojs/crypto/sha1";
 import * as pako from "pako";
 
@@ -198,6 +199,78 @@ describe("loose object test", () => {
 				// Restore the original
 				renameSync(backupFile, objectPath);
 			}
+		}
+	});
+
+	it("should redeflate a git blob in blocks, respecting the header", () => {
+		const blockSize = 4096;
+
+		// Create test data: 4096 A's, 4096 B's, through Z
+		const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		const testData = Buffer.alloc(letters.length * blockSize);
+		for (let i = 0; i < letters.length; i++) {
+			testData.fill(letters[i]!, i * blockSize, (i + 1) * blockSize);
+		}
+
+		// Step 1: Create a file with the data, add it to git, and get the hash
+		const tempDir = mkdtempSync(join(tmpdir(), "git-redeflate-test-"));
+		const testFilePath = join(tempDir, "test-data.bin");
+
+		try {
+			execSync(`git init "${tempDir}"`, { encoding: "utf-8", cwd: tempDir });
+			writeFileSync(testFilePath, testData);
+			execSync(`git add test-data.bin`, { encoding: "utf-8", cwd: tempDir });
+
+			const hashOutput = execSync(`git hash-object test-data.bin`, {
+				encoding: "utf-8",
+				cwd: tempDir,
+			}).trim();
+			const blobHash = hashOutput;
+
+			// Use the redeflateBlob function to re-encode the blob with proper block boundaries
+			const redeflatedCompressed = redeflateBlob({
+				gitPath: join(tempDir, ".git"),
+				blobUid: blobHash,
+				blockSize,
+			});
+
+			// Step 8: Save the resulting compressed data into a new git object and verify it with git cat-file -p and -t
+			const objectPath = join(
+				tempDir,
+				".git",
+				"objects",
+				blobHash.slice(0, 2),
+				blobHash.slice(2)
+			);
+			const backupPath = join(tempDir, "blob-backup");
+
+			// Backup the original
+			renameSync(objectPath, backupPath);
+
+			// Write the redeflated blob
+			writeFileSync(objectPath, redeflatedCompressed);
+			execSync(`chmod 444 "${objectPath}"`, { encoding: "utf-8" });
+
+			// Verify with git cat-file -p
+			const catFileOutput = execSync(
+				`git cat-file -p ${blobHash}`,
+				{ encoding: "utf-8", cwd: tempDir }
+			);
+			const gitContent = Buffer.from(catFileOutput);
+
+			expect(gitContent.length).toBe(testData.length);
+			expect(Buffer.compare(gitContent, testData)).toBe(0);
+
+			// Verify with git cat-file -t
+			const typeOutput = execSync(
+				`git cat-file -t ${blobHash}`,
+				{ encoding: "utf-8", cwd: tempDir }
+			).trim();
+
+			expect(typeOutput).toBe("blob");
+		} finally {
+			// Clean up
+			execSync(`rm -rf "${tempDir}"`, { encoding: "utf-8" });
 		}
 	});
 });
